@@ -1,13 +1,15 @@
-// part 1
-
 #ifndef MQTT_H
 #define MQTT_H
 
 #include <stdio.h>
 
 #define MQTT_HEADER_LEN 2
-#define MQTT_ACK_LEN 4
+#define MQTT_ACK_LEN    4
 
+/*
+ * Stub bytes, useful for generic replies, these represent the first byte in
+ * the fixed header
+ */
 #define CONNACK_BYTE  0x20
 #define PUBLISH_BYTE  0x30
 #define PUBACK_BYTE   0x40
@@ -18,6 +20,7 @@
 #define UNSUBACK_BYTE 0xB0
 #define PINGRESP_BYTE 0xD0
 
+/* Message types */
 enum packet_type {
     CONNECT     = 1,
     CONNACK     = 2,
@@ -32,10 +35,10 @@ enum packet_type {
     UNSUBACK    = 11,
     PINGREQ     = 12,
     PINGRESP    = 13,
-    DISCONNECT  = 14,
+    DISCONNECT  = 14
 };
 
-enum qos_level {AT_MOST_ONCE, AT_LEAST_ONCE, EXACTLY_ONCE};
+enum qos_level { AT_MOST_ONCE, AT_LEAST_ONCE, EXACTLY_ONCE };
 
 union mqtt_header {
     unsigned char byte;
@@ -49,7 +52,7 @@ union mqtt_header {
 
 struct mqtt_connect {
     union mqtt_header header;
-    union{
+    union {
         unsigned char byte;
         struct {
             int reserved : 1;
@@ -59,7 +62,7 @@ struct mqtt_connect {
             unsigned will_retain : 1;
             unsigned password : 1;
             unsigned username : 1;
-        } bits;  
+        } bits;
     };
     struct {
         unsigned short keepalive;
@@ -135,8 +138,8 @@ typedef union mqtt_header mqtt_pingresp;
 typedef union mqtt_header mqtt_disconnect;
 
 union mqtt_packet {
-    union mqtt_header header;
     struct mqtt_ack ack;
+    union mqtt_header header;
     struct mqtt_connect connect;
     struct mqtt_connack connack;
     struct mqtt_suback suback;
@@ -151,10 +154,15 @@ int unpack_mqtt_packet(const unsigned char *, union mqtt_packet *);
 unsigned char *pack_mqtt_packet(const union mqtt_packet *, unsigned);
 
 union mqtt_header *mqtt_packet_header(unsigned char);
-struct mqtt_ack *mqtt_packet_ack(unsigned char, unsigned short);
-struct mqtt_connack *mqtt_packet_connack(unsigned char, unsigned char, unsigned char);
-struct mqtt_suback *mqtt_packet_suback(unsigned char, unsigned short, unsigned char *, unsigned short);
-struct mqtt_publish *mqtt_packet_publish(unsigned char, unsigned short, size_t, unsigned char *, size_t, unsigned char *);
+struct mqtt_ack *mqtt_packet_ack(unsigned char , unsigned short);
+struct mqtt_connack *mqtt_packet_connack(unsigned char ,
+                                         unsigned char ,
+                                         unsigned char);
+struct mqtt_suback *mqtt_packet_suback(unsigned char, unsigned short,
+                                       unsigned char *, unsigned short);
+struct mqtt_publish *mqtt_packet_publish(unsigned char, unsigned short, size_t,
+                                         unsigned char *,
+                                         size_t, unsigned char *);
 void mqtt_packet_release(union mqtt_packet *, unsigned);
 
 #endif
