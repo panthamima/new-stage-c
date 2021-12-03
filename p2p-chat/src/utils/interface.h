@@ -13,4 +13,4 @@ void addMessage(const char* msg);
 
 int readInput(char* buf, int* size);
 
-#endif 
+#endif
