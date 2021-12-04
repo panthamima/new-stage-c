@@ -1,0 +1,3 @@
+/home/panthamima/knowledges/p2p-chat/CMakeFiles/rebuild_cache.dir
+/home/panthamima/knowledges/p2p-chat/CMakeFiles/edit_cache.dir
+/home/panthamima/knowledges/p2p-chat/CMakeFiles/C_P2P_Chat.dir
