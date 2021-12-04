@@ -10,7 +10,7 @@ find_package(Curses)
 include(FindCurses)
 
 set(SOURCE_FILES
-        src/main.c
+        src/main.casd
         src/chat.c
         src/clients.c
         src/network/socket.c
