@@ -3,11 +3,13 @@
 
 deadline - min 20 projetcs before 2022 year
 
-complete 1/20 :
-  1)https://github.com/gistrec/C-P2P-Chat/tree/master/src 
+complete 1/20 :<br>
+----
+  > https://github.com/gistrec/C-P2P-Chat
+  
 
-
-
+links 50 : <br>
+---
   01)https://github.com/jamesroutley/write-a-hash-table</br>
   02)https://www.uninformativ.de/blog/postings/2018-02-24/0/POSTING-en.html</br>
   03)https://brennan.io/2016/11/14/kernel-dev-ep3/</br>
