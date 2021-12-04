@@ -114,7 +114,6 @@ int main(int argc, char *argv[]) {
                     break;
                 case PACKET_LIST_USERS:
                     buf_send_size = createConnectRequestPacket((char *) &buf_send, (char *) &name);
-                    // Загружаем клиентов
                     int count =  buf_read[1];
                     for (int i = 0; i < count; i++) {
                         memcpy(&(buf_address), buf_read + 2, sizeof(struct sockaddr_in));
@@ -126,7 +125,7 @@ int main(int argc, char *argv[]) {
         static int size_input = 0;
         static char buf_input[100] = {0};
         while (readInput((char *) buf_input, &size_input) == 1) {
-            sprintf((char *) &buf_send, "Вы: %s", buf_input);
+            sprintf((char *) &buf_send, "you: %s", buf_input);
 
             addMessage((char *) &buf_send);
             createMessagePacket((char *) &buf_send, (char *) &buf_input, size_input);
@@ -140,7 +139,7 @@ int main(int argc, char *argv[]) {
                     createSimplePacket(PACKET_TIMEOUT, (char *) &buf_send);
                     sendPacket(sockfd, (char *) &buf_send, 1);
                     removeClient(&clients[i]);
-                    sprintf((char *) &buf_send, "user %s leave. Timeout.", clients[i].name);
+                    sprintf((char *) &buf_send, "user %s disconnected. timeout.", clients[i].name);
                     addMessage((char *) &buf_send);
                 }else if(clients[i].isActive > 1) {
                     clients[i].isActive--;

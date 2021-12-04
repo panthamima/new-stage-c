@@ -1,6 +1,6 @@
 #include "utils.h"
 
-void parseConnectAdderss(int argc, char *argv[], char** ip, int* port) {
+void parseConnectAddress(int argc, char *argv[], char** ip, int* port) {
     for (int i = 0; i < argc; i++ ) {
         if (strcmp(argv[i], "-connect") == 0 && (i + 2) <= argc) {
             *ip = argv[i + 1];
@@ -14,8 +14,8 @@ void parseConnectAdderss(int argc, char *argv[], char** ip, int* port) {
     }
 }
 
-void parseSourscePort(int argc, char *argv[], int* port) {
-    for (int i = 0; i < argc; i ++ ) {
+void parseSourcePort(int argc, char *argv[], int* port) {
+    for (int i = 0; i < argc; i++ ) {
         if (strcmp(argv[i], "-port") == 0 && (i + 1) <= argc) {
             *port = atoi(argv[i + 1]);
 

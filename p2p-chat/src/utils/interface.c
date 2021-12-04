@@ -21,6 +21,14 @@ static void initClientBox() {
     wrefresh(box_client);
 }
 
+static void initMessageBox() {
+    box_messages = newwin(17, 65, 5, 0);
+    box(box_messages, 0, 0);
+    mvwprintw(box_messages, 16, 0, "│                                                               │");
+
+    wrefresh(box_messages);
+}
+
 static void initInputBox() {
     box_input = newwin(3, 65, 22, 0);
     box(box_input, 0, 0);
@@ -69,13 +77,13 @@ void addMessage(const char* msg) {
 void updateInfoBox(const char* name, const char* ip, int port) {
     wclear(box_info);
     box(box_info, 0, 0);
-    mvwprintw(box_info, 1, 1, "your address: ");
+    mvwprintw(box_info, 1, 1, "ip address: ");
     mvwprintw(box_info, 1, 13, ip);
     char str_port[5];
     sprintf((char *) &str_port, "%d", port);
     mvwprintw(box_info, 1, 13 + (int) strlen(ip), ":");
     mvwprintw(box_info, 1, 14 + (int) strlen(ip) , str_port);
-    mvwprintw(box_info, 2, 1, "Your nickname: ");
+    mvwprintw(box_info, 2, 1, "nickname: ");
     mvwprintw(box_info, 2, 13, name);
 
     wrefresh(box_info);

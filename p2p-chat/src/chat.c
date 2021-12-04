@@ -1,8 +1,7 @@
 #include "chat.h"
 
-
 void escape(const char* error) {
-    printf("Error!!!\n");
+    printf("ERROR\n");
     printf("%s\n", error);
     exit(EXIT_FAILURE);
 }
@@ -17,7 +16,7 @@ void connectToClient(int sockfd, const struct sockaddr_in* addr, const char* nam
         sleep(2);
 
         struct sockaddr_in buf_address = {0};
-        unsigned int address_size = sizeof(struct sockaddr_in); // Оказывается нужна инициализация!!!
+        unsigned int address_size = sizeof(struct sockaddr_in); 
         while ((buf_size = socket_read(sockfd, (char *) &buf, &buf_address, &address_size)) != -1) {
             buf[buf_size] = '\0';
             int packet_id = getPacketId((char *) &buf);
@@ -28,7 +27,7 @@ void connectToClient(int sockfd, const struct sockaddr_in* addr, const char* nam
                 addClient(&buf_address, (char *) &buf_name);
                 updateClientBox();
 
-                sprintf((char *) &buf, "Подключились к %s", buf_name);
+                sprintf((char *) &buf, "connect to %s", buf_name);
                 addMessage((char *) &buf);
 
                 buf_size = createSimplePacket(PACKET_REQUEST_USERS, (char *) &buf);

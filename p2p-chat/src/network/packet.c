@@ -29,10 +29,9 @@ int createMessagePacket(char* buf_send, char* buf_input, int len_msg) {
 
 int createListUsersPacket(char* buf) {
     buf[0] = PACKET_LIST_USERS;
-    buf[1] = 0; // Кол-во клиентов
+    buf[1] = 0; 
 
     int pos = 2;
-    // Для всех клиентов
     for (int i = 0; i < MAX_CLIENTS; i++) {
         if (clients[i].isActive > 0) {
             buf[1]++;

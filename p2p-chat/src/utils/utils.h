@@ -4,7 +4,7 @@
 #include "../chat.h"
 
 void parseConnectAddress(int argc, char *argv[], char** ip, int* port);
-void parseSoursePort(int argc, char *argv[], int* port);
+void parseSourcePort(int argc, char *argv[], int* port);
 void parseName(int argc, char *argv[], char* name);
  
 #endif
