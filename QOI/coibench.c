@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <dirent.h>
-#include <png.h>
+//#include <dirent.h>
+//#include <png.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #define SRBI_ONLY_PNG
@@ -12,3 +12,4 @@
 
 #define QOI_IMPLEMENTATION
 #include "qoi.h"
+
