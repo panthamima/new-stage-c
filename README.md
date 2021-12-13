@@ -6,8 +6,8 @@ deadline - min 20 projetcs before 2022 year
 complete 2/20 :<br>
 ----
   > https://github.com/gistrec/C-P2P-Chat<br>
-  > https://github.com/lotabout/write-a-C-interpreter/blob/master/xc.c
-  > https://github.com/kamalmarhubi/shell-workshop
+  > https://github.com/lotabout/write-a-C-interpreter/blob/master/xc.c</br>
+  > https://github.com/kamalmarhubi/shell-workshop</br>
   
 
 links 50 : <br>
