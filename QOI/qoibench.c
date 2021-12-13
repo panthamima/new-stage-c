@@ -64,4 +64,4 @@ static uint64_t ns() {
 		QueryPerformanceCounter(&now);
 		return (uint64_t) ((1e9 * now.QuadPart)	/ win_frequency.QuadPart);
 #endif
-}
+} 
