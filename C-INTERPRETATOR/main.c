@@ -5,38 +5,45 @@
 #include <stdint.h>
 #define int intptr_t
 
-int token;                   
-int token_val;                
-char *src, *old_src;          
-int poolsize;                
-int line;                    
-int *text,                   
-    *old_text,               
-    *stack;                   
-char *data;                  
-int *pc, *bp, *sp, ax, cycle;
-int *current_id,             
-    *symbols;                
-int *idmain;                 
+int token;                   // текущий токен
+int token_val;               // значение текущего токена в основном для числа
+char *src, *old_src;         // указатель на строку исходного кода 
+int poolsize;                // стандартный размер текста/значения/стэка
+int line;                    // номер строки 
+int *text,                   // часть текста 
+    *old_text,               // для кучи(хранилище памяти) сегмента текста
+    *stack;                  // стэк(упорядоченный набор элементов)
+char *data;                  // сегмент данных
+int *pc, *bp, *sp, ax, cycle;// регистры вирутальной машины (??)
+int *current_id,             // текущий проанализированный идентификатор
+    *symbols;                // таблица символов ??
+int *idmain;                 // указатель на main функцию
 
+
+// инструкции 
 enum { LEA ,IMM ,JMP ,CALL,JZ  ,JNZ ,ENT ,ADJ ,LEV ,LI  ,LC  ,SI  ,SC  ,PUSH,
        OR  ,XOR ,AND ,EQ  ,NE  ,LT  ,GT  ,LE  ,GE  ,SHL ,SHR ,ADD ,SUB ,MUL ,DIV ,MOD ,
        OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT };
 
+
+// классы и токены , операторы последними и в порядке приоритета
 enum {
   Num = 128, Fun, Sys, Glo, Loc, Id,
   Char, Else, Enum, If, Int, Return, Sizeof, While,
-  Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak
+  Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, 
+  Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak
 };
 
-enum {Token, Hash, Name, Type, Class, Value, BType, BClass, BValue, IdSize};
+// поля идентификатора ??
+enum { Token, Hash, Name, Type, Class, Value, BType, BClass, BValue, IdSize };
 
+// типы переменных и функций
 enum { CHAR, INT, PTR };
 
-int basetype;    // the type of a declaration, make it global for convenience
-int expr_type;   // the type of an expression
+int basetype;    // тип объявления , для удобства сделан глобальным
+int expr_type;   // тип выражения
 
-int index_of_bp; // index of bp pointer on stack
+int index_of_bp; // индекс указателя стандартного указателя в стеке
 
 void next() {
     char *last_pos;
@@ -45,7 +52,7 @@ void next() {
     while (token = *src) {
         ++src;
 
-        // parse token here
+        // парсинг токена
         if (token == '\n') {
             ++line;
         }
@@ -56,6 +63,7 @@ void next() {
         }
         else if ((token >= 'a' && token <= 'z') || (token >= 'A' && token <= 'Z') || (token == '_')) {
 
+            //парсинг идентификатора
             last_pos = src - 1;
             hash = token;
 
@@ -64,6 +72,7 @@ void next() {
                 src++;
             }
 
+            //поиск существующего идентификатора, линейный поиск
             current_id = symbols;
             while (current_id[Token]) {
                 if (current_id[Hash] == hash && !memcmp((char *)current_id[Name], last_pos, src - last_pos)) {
@@ -73,26 +82,31 @@ void next() {
                 current_id = current_id + IdSize;
             }
 
-
+            //сохранение нового ID
             current_id[Name] = (int)last_pos;
             current_id[Hash] = hash;
             token = current_id[Token] = Id;
             return;
         }
         else if (token >= '0' && token <= '9') {
+            // парсинг числа трех видов dec(123) hex(0x123) oct(017)
             token_val = token - '0';
             if (token_val > 0) {
+                // dec - десятичное начинается с [1-9]
                 while (*src >= '0' && *src <= '9') {
                     token_val = token_val*10 + *src++ - '0';
                 }
             } else {
+                // dec начинается с 0 
                 if (*src == 'x' || *src == 'X') {
+                    // hex - шестнадцатеричное
                     token = *++src;
                     while ((token >= '0' && token <= '9') || (token >= 'a' && token <= 'f') || (token >= 'A' && token <= 'F')) {
                         token_val = token_val * 16 + (token & 15) + (token >= 'A' ? 9 : 0);
                         token = *++src;
                     }
                 } else {
+                    // oct - восьмеричное
                     while (*src >= '0' && *src <= '7') {
                         token_val = token_val*8 + *src++ - '0';
                     }
@@ -103,9 +117,11 @@ void next() {
             return;
         }
         else if (token == '"' || token == '\'') {
+            // парсим " и \ 
             last_pos = data;
             while (*src != 0 && *src != token) {
                 token_val = *src++;
+                // подстановка символа
                 if (token_val == '\\') {
                     token_val = *src++;
                     if (token_val == 'n') {
@@ -119,6 +135,7 @@ void next() {
             }
 
             src++;
+            // если это одиночный символ, возвращаем Num токен
             if (token == '"') {
                 token_val = (int)last_pos;
             } else {
@@ -129,15 +146,18 @@ void next() {
         }
         else if (token == '/') {
             if (*src == '/') {
+                // пропуск комментариев
                 while (*src != 0 && *src != '\n') {
                     ++src;
                 }
             } else {
+                // применяем оператор деления
                 token = Div;
                 return;
             }
         }
         else if (token == '=') {
+            // парсим '==' и '='
             if (*src == '=') {
                 src ++;
                 token = Eq;
@@ -147,6 +167,7 @@ void next() {
             return;
         }
         else if (token == '+') {
+            // парсим '+' и '++'
             if (*src == '+') {
                 src ++;
                 token = Inc;
@@ -156,6 +177,7 @@ void next() {
             return;
         }
         else if (token == '-') {
+            // парсим '-' и '--'
             if (*src == '-') {
                 src ++;
                 token = Dec;
@@ -165,6 +187,7 @@ void next() {
             return;
         }
         else if (token == '!') {
+            // парсим !=
             if (*src == '=') {
                 src++;
                 token = Ne;
@@ -172,6 +195,7 @@ void next() {
             return;
         }
         else if (token == '<') {
+            // парсим <=, <<, <
             if (*src == '=') {
                 src ++;
                 token = Le;
@@ -184,6 +208,7 @@ void next() {
             return;
         }
         else if (token == '>') {
+            // парсим >=, >>, >
             if (*src == '=') {
                 src ++;
                 token = Ge;
@@ -196,6 +221,7 @@ void next() {
             return;
         }
         else if (token == '|') {
+            // парсим | и ||
             if (*src == '|') {
                 src ++;
                 token = Lor;
@@ -205,6 +231,7 @@ void next() {
             return;
         }
         else if (token == '&') {
+            // парсим & и &&
             if (*src == '&') {
                 src ++;
                 token = Lan;
@@ -234,6 +261,7 @@ void next() {
             return;
         }
         else if (token == '~' || token == ';' || token == '{' || token == '}' || token == '(' || token == ')' || token == ']' || token == ',' || token == ':') {
+            // если ничего из этого, напрямую возвращаем токен
             return;
         }
     }
@@ -250,6 +278,22 @@ void match(int tk) {
 }
 
 void expression(int level) {
+    // выражения имеют различный формат
+    // но в основном их можно поделить на две части
+    // модуль и оператор, например:
+    // (char) * a[10] = (int*)func(b>0 ? 10 : 20);
+    // a[10] это единица измеренеия а * это оператор
+    // результат func(...) это единица измерения
+    // поэтому мы сначала парсим единичные и унарные операторы
+    // а потом двоичные,
+    // 
+    // так же выражения могут быть след. типов:
+    //
+    // 1. unit_unary ::= unit | unit unary_op | unary_op unit
+    // 2. expr ::= unit_unary (bin_op unit_unary ...)
+
+
+    // инициализация унарного оператора
     int *id;
     int tmp;
     int *addr;
@@ -261,6 +305,8 @@ void expression(int level) {
         if (token == Num) {
             match(Num);
 
+
+            // вывод кода
             *++text = IMM;
             *++text = token_val;
             expr_type = INT;
@@ -272,6 +318,7 @@ void expression(int level) {
             *++text = token_val;
 
             match('"');
+            // хранить остальные строки
             while (token == '"') {
                 match('"');
             }
