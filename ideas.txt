@@ -18,3 +18,9 @@ timer {
     даешь два текста и он проверяет на отличия
     доджит комментарии и показывает все красиво
 }
+
+
+https://github.com/euler1729/CHESS-AI/
+https://github.com/nurupo/rootkit
+http://beej.us/guide/bgnet/
+https://github.com/360trev/PELoadFromRam
