@@ -323,10 +323,14 @@ void expression(int level) {
                 match('"');
             }
 
+            // смещение всех данных на 1 позицию вперед,
+            // чтобы начиналось не с 0 а с 1
             data = (char *)(((int)data + sizeof(int)) & (-sizeof(int)));
             expr_type = PTR;
         }
         else if (token == Sizeof) {
+            // sizeof унарный оператор, который поддерживает только :
+            // sizeof(int), sizeof(char) ...
             match(Sizeof);
             match('(');
             expr_type = INT;
@@ -345,20 +349,27 @@ void expression(int level) {
 
             match(')');
 
+            // вывод кода
             *++text = IMM;
             *++text = (expr_type == CHAR) ? sizeof(char) : sizeof(int);
 
             expr_type = INT;
         }
         else if (token == Id) {
+            // есть несколько типов, которые могут быть ??
+            // 1)вызов функции
+            // 2)enum переменная
+            // 3)глобальная или локальная переменная
             match(Id);
 
             id = current_id;
 
             if (token == '(') {
+                // вызов функции
                 match('(');
 
-                tmp = 0; 
+                // передаем аргументы
+                tmp = 0; // количество аргументов
                 while (token != ')') {
                     expression(Assign);
                     *++text = PUSH;
@@ -371,12 +382,13 @@ void expression(int level) {
                 }
                 match(')');
 
+                // вывод кода
                 if (id[Class] == Sys) {
-                    // system functions
+                    // системная функция 
                     *++text = id[Value];
                 }
                 else if (id[Class] == Fun) {
-                    // function call
+                    // вызов функции
                     *++text = CALL;
                     *++text = id[Value];
                 }
@@ -385,6 +397,7 @@ void expression(int level) {
                     exit(-1);
                 }
 
+                // очистить стек для аргументов
                 if (tmp > 0) {
                     *++text = ADJ;
                     *++text = tmp;
@@ -392,11 +405,13 @@ void expression(int level) {
                 expr_type = id[Type];
             }
             else if (id[Class] == Num) {
+                // enum переменная
                 *++text = IMM;
                 *++text = id[Value];
                 expr_type = INT;
             }
             else {
+                // проверка переменной
                 if (id[Class] == Loc) {
                     *++text = LEA;
                     *++text = index_of_bp - id[Value];
@@ -410,14 +425,17 @@ void expression(int level) {
                     exit(-1);
                 }
 
+                // вывод кода, по умолчанию закгржается значение 
+                // адрес которого хранится в 'ax'
                 expr_type = id[Type];
                 *++text = (expr_type == CHAR) ? LC : LI;
             }
         }
         else if (token == '(') {
+            // приведение или скобка
             match('(');
             if (token == Int || token == Char) {
-                tmp = (token == Char) ? CHAR : INT; // cast type
+                tmp = (token == Char) ? CHAR : INT; // тип приведения
                 match(token);
                 while (token == Mul) {
                     match(Mul);
@@ -426,15 +444,17 @@ void expression(int level) {
 
                 match(')');
 
-                expression(Inc); 
+                expression(Inc); // приведение имеет приоритет как (Inc++)
 
                 expr_type  = tmp;
             } else {
+                // если просто скобка
                 expression(Assign);
                 match(')');
             }
         }
         else if (token == Mul) {
+            // разыменовывание *<addr>
             match(Mul);
             expression(Inc); 
 
@@ -448,9 +468,10 @@ void expression(int level) {
             *++text = (expr_type == CHAR) ? LC : LI;
         }
         else if (token == And) {
+            // получение адреса
             match(And);
-            expression(Inc); 
-            if (*text == LC || *text == LI) {
+            expression(Inc); // получение адреса
+            if (*text == LC || *text == LI) { 
                 text --;
             } else {
                 printf("%d: bad address of\n", line);
@@ -460,10 +481,11 @@ void expression(int level) {
             expr_type = expr_type + PTR;
         }
         else if (token == '!') {
-            // not
+            // отрицание
             match('!');
             expression(Inc);
 
+            // вывод кода, используем <expr> == 0
             *++text = PUSH;
             *++text = IMM;
             *++text = 0;
@@ -472,10 +494,11 @@ void expression(int level) {
             expr_type = INT;
         }
         else if (token == '~') {
-            // bitwise not
+            // побитовое отрицание
             match('~');
             expression(Inc);
 
+            // вывод кода, используем <expr> XOR -1
             *++text = PUSH;
             *++text = IMM;
             *++text = -1;
@@ -484,12 +507,14 @@ void expression(int level) {
             expr_type = INT;
         }
         else if (token == Add) {
+            // добавляем переменную. ничего не делаем
             match(Add);
             expression(Inc);
 
             expr_type = INT;
         }
         else if (token == Sub) {
+            // -переменная
             match(Sub);
 
             if (token == Num) {
@@ -512,7 +537,7 @@ void expression(int level) {
             match(token);
             expression(Inc);
             if (*text == LC) {
-                *text = PUSH;  
+                *text = PUSH; // дублировать адресс
                 *++text = LC;
             } else if (*text == LI) {
                 *text = PUSH;
@@ -532,14 +557,16 @@ void expression(int level) {
             exit(-1);
         }
     }
-
+    // бинарный оператор и постфиксные операторы
     {
         while (token >= level) {
+            // обрабатывать в соответствии с приоритетом текущего оператора
             tmp = expr_type;
             if (token == Assign) {
+                // переменная = выражение
                 match(Assign);
                 if (*text == LC || *text == LI) {
-                    *text = PUSH; 
+                    *text = PUSH; // сохранить указатель lvalue(данных строки)
                 } else {
                     printf("%d: bad lvalue in assignment\n", line);
                     exit(-1);
@@ -550,7 +577,7 @@ void expression(int level) {
                 *++text = (expr_type == CHAR) ? SC : SI;
             }
             else if (token == Cond) {
-                // expr ? a : b;
+                // выражение ? a : b;
                 match(Cond);
                 *++text = JZ;
                 addr = ++text;
@@ -568,7 +595,7 @@ void expression(int level) {
                 *addr = (int)(text + 1);
             }
             else if (token == Lor) {
-                // logic or
+                // логическое or
                 match(Lor);
                 *++text = JNZ;
                 addr = ++text;
@@ -577,7 +604,7 @@ void expression(int level) {
                 expr_type = INT;
             }
             else if (token == Lan) {
-                // logic and
+                // логическое and
                 match(Lan);
                 *++text = JZ;
                 addr = ++text;
@@ -586,7 +613,7 @@ void expression(int level) {
                 expr_type = INT;
             }
             else if (token == Or) {
-                // bitwise or
+                // побитовое or
                 match(Or);
                 *++text = PUSH;
                 expression(Xor);
@@ -594,7 +621,7 @@ void expression(int level) {
                 expr_type = INT;
             }
             else if (token == Xor) {
-                // bitwise xor
+                // побитовое xor
                 match(Xor);
                 *++text = PUSH;
                 expression(And);
@@ -602,7 +629,7 @@ void expression(int level) {
                 expr_type = INT;
             }
             else if (token == And) {
-                // bitwise and
+                // побитовое and
                 match(And);
                 *++text = PUSH;
                 expression(Eq);
@@ -610,7 +637,7 @@ void expression(int level) {
                 expr_type = INT;
             }
             else if (token == Eq) {
-                // equal ==
+                // сравнение ==
                 match(Eq);
                 *++text = PUSH;
                 expression(Ne);
@@ -618,7 +645,7 @@ void expression(int level) {
                 expr_type = INT;
             }
             else if (token == Ne) {
-                // not equal !=
+                // не равно !=
                 match(Ne);
                 *++text = PUSH;
                 expression(Lt);
@@ -626,7 +653,7 @@ void expression(int level) {
                 expr_type = INT;
             }
             else if (token == Lt) {
-                // less than
+                // меньше чем
                 match(Lt);
                 *++text = PUSH;
                 expression(Shl);
@@ -634,7 +661,7 @@ void expression(int level) {
                 expr_type = INT;
             }
             else if (token == Gt) {
-                // greater than
+                // больше чем
                 match(Gt);
                 *++text = PUSH;
                 expression(Shl);
@@ -642,7 +669,7 @@ void expression(int level) {
                 expr_type = INT;
             }
             else if (token == Le) {
-                // less than or equal to
+                // меньше или равно
                 match(Le);
                 *++text = PUSH;
                 expression(Shl);
@@ -650,7 +677,7 @@ void expression(int level) {
                 expr_type = INT;
             }
             else if (token == Ge) {
-                // greater than or equal to
+                // больше или равно
                 match(Ge);
                 *++text = PUSH;
                 expression(Shl);
@@ -658,7 +685,7 @@ void expression(int level) {
                 expr_type = INT;
             }
             else if (token == Shl) {
-                // shift left
+                // сдвиг влево
                 match(Shl);
                 *++text = PUSH;
                 expression(Add);
@@ -666,7 +693,7 @@ void expression(int level) {
                 expr_type = INT;
             }
             else if (token == Shr) {
-                // shift right
+                // сдвиг вправо
                 match(Shr);
                 *++text = PUSH;
                 expression(Add);
@@ -674,14 +701,14 @@ void expression(int level) {
                 expr_type = INT;
             }
             else if (token == Add) {
-                // add
+                // добавление
                 match(Add);
                 *++text = PUSH;
                 expression(Mul);
 
                 expr_type = tmp;
                 if (expr_type > PTR) {
-                    // pointer type, and not `char *`
+                    // тип указателя, не `char *`
                     *++text = PUSH;
                     *++text = IMM;
                     *++text = sizeof(int);
@@ -695,7 +722,7 @@ void expression(int level) {
                 *++text = PUSH;
                 expression(Mul);
                 if (tmp > PTR && tmp == expr_type) {
-                    // pointer subtraction
+                    // вычитание указателя
                     *++text = SUB;
                     *++text = PUSH;
                     *++text = IMM;
@@ -703,7 +730,7 @@ void expression(int level) {
                     *++text = DIV;
                     expr_type = INT;
                 } else if (tmp > PTR) {
-                    // pointer movement
+                    // перемещение указателя
                     *++text = PUSH;
                     *++text = IMM;
                     *++text = sizeof(int);
@@ -711,13 +738,13 @@ void expression(int level) {
                     *++text = SUB;
                     expr_type = tmp;
                 } else {
-                    // numeral subtraction
+                    // числовое вычитание
                     *++text = SUB;
                     expr_type = tmp;
                 }
             }
             else if (token == Mul) {
-                // multiply
+                // умножение
                 match(Mul);
                 *++text = PUSH;
                 expression(Inc);
@@ -725,7 +752,7 @@ void expression(int level) {
                 expr_type = tmp;
             }
             else if (token == Div) {
-                // divide
+                // деление
                 match(Div);
                 *++text = PUSH;
                 expression(Inc);
@@ -733,7 +760,7 @@ void expression(int level) {
                 expr_type = tmp;
             }
             else if (token == Mod) {
-                // Modulo
+                // деление по модулю ( с остатком)
                 match(Mod);
                 *++text = PUSH;
                 expression(Inc);
@@ -766,14 +793,14 @@ void expression(int level) {
                 match(token);
             }
             else if (token == Brak) {
-                // array access var[xx]
+                // доступ к массиву var[xx]
                 match(Brak);
                 *++text = PUSH;
                 expression(Assign);
                 match(']');
 
                 if (tmp > PTR) {
-                    // pointer, `not char *`
+                    // указатель, `не char *`
                     *++text = PUSH;
                     *++text = IMM;
                     *++text = sizeof(int);
@@ -796,20 +823,27 @@ void expression(int level) {
 }
 
 void statement() {
+    // виды statements(6)
+    // 1) if(...) <statement> [else <statment>]
+    // 2) while(...) <statement>
+    // 3) { <statement> }
+    // 4) return ...;
+    // 5) <empty statement>
+    // 6) expression (конец выражения точкой с запятой)
 
-    int *a, *b; // bess for branch control
+    int *a, *b; // для управления фильтрами
 
     if (token == If) {
         match(If);
         match('(');
-        expression(Assign);  // parse condition
+        expression(Assign);  // парсинг состояния
         match(')');
 
         *++text = JZ;
         b = ++text;
 
-        statement();         // parse statement
-        if (token == Else) { // parse else
+        statement();  // парсинг statement
+        if (token == Else) { // парсинг else
             match(Else);
 
             *b = (int)(text + 3);
@@ -840,6 +874,7 @@ void statement() {
         *b = (int)(text + 1);
     }
     else if (token == '{') {
+        // { <statement> ...}
         match('{');
 
         while (token != '}') {
@@ -858,11 +893,11 @@ void statement() {
 
         match(';');
 
-        // emit code for return
+        // вывод кода для return
         *++text = LEV;
     }
     else if (token == ';') {
-        // empty statement
+        // пустой statement
         match(';');
     }
     else {
@@ -885,13 +920,13 @@ void function_parameter() {
             match(Char);
         }
 
-        // pointer type
+        // тип указателя
         while (token == Mul) {
             match(Mul);
             type = type + PTR;
         }
 
-        // parameter name
+        // имя параметра
         if (token != Id) {
             printf("%d: bad parameter declaration\n", line);
             exit(-1);
@@ -902,7 +937,7 @@ void function_parameter() {
         }
 
         match(Id);
-        // store the local variable
+        // хранить локальную переменную
         current_id[BClass] = current_id[Class]; current_id[Class]  = Loc;
         current_id[BType]  = current_id[Type];  current_id[Type]   = type;
         current_id[BValue] = current_id[Value]; current_id[Value]  = params++;   // index of current parameter
@@ -915,12 +950,19 @@ void function_parameter() {
 }
 
 void function_body() {
-    int pos_local; // position of local variables on the stack.
+    // тип func_name (...) {...}
+    //   -->|   |<--
+
+    // ... {
+    // 1. локальное объявление
+    // 2. statements
+    // }
+    int pos_local; // позиция локальной переменной в стэке
     int type;
     pos_local = index_of_bp;
 
     while (token == Int || token == Char) {
-        // local variable declaration, just like global ones.
+        // локальное объявление переменной, как и глобальной
         basetype = (token == Int) ? INT : CHAR;
         match(token);
 
@@ -932,18 +974,18 @@ void function_body() {
             }
 
             if (token != Id) {
-                // invalid declaration
+                // неправильное объявление
                 printf("%d: bad local declaration\n", line);
                 exit(-1);
             }
             if (current_id[Class] == Loc) {
-                // identifier exists
+                // идентификатор существует
                 printf("%d: duplicate local declaration\n", line);
                 exit(-1);
             }
             match(Id);
 
-            // store the local variable
+            // хранение локальной переменной
             current_id[BClass] = current_id[Class]; current_id[Class]  = Loc;
             current_id[BType]  = current_id[Type];  current_id[Type]   = type;
             current_id[BValue] = current_id[Value]; current_id[Value]  = ++pos_local;   // index of current parameter
@@ -955,7 +997,7 @@ void function_body() {
         match(';');
     }
 
-    // save the stack size for local variables
+    // сохранить размер стэка для локальной переменной
     *++text = ENT;
     *++text = pos_local - index_of_bp;
 
@@ -964,16 +1006,22 @@ void function_body() {
         statement();
     }
 
-    // emit code for leaving the sub function
+    // вывод кода для покидающих sub функций
     *++text = LEV;
 }
 
 void function_declaration() {
+    // type func_name (...) {...}
+    //               | this part
+
     match('(');
     function_parameter();
     match(')');
     match('{');
     function_body();
+
+    // развернуть объявления локальных переменных для
+    // всех локальных переменных
 
     current_id = symbols;
     while (current_id[Token]) {
@@ -987,6 +1035,7 @@ void function_declaration() {
 }
 
 void enum_declaration() {
+    // парсинг enum[id] {a = 1, b = 2, ...}
     int i;
     i = 0;
     while (token != '}') {
@@ -996,7 +1045,7 @@ void enum_declaration() {
         }
         next();
         if (token == Assign) {
-            // like {a=10}
+            // как {a=10}
             next();
             if (token != Num) {
                 printf("%d: bad enum initializer\n", line);
@@ -1017,19 +1066,28 @@ void enum_declaration() {
 }
 
 void global_declaration() {
-    int type; 
-    int i; 
+    // global_declaration ::= enum_decl | variable_decl | function_decl
+    //
+    // enum_decl ::= 'enum' [id] '{' id ['=' 'num'] {',' id ['=' 'num'} '}'
+    //
+    // variable_decl ::= type {'*'} id { ',' {'*'} id } ';'
+    //
+    // function_decl ::= type {'*'} id '(' parameter_decl ')' '{' body_decl '}'
+
+    int type; // фактический тип переменной
+    int i; // tmp 
 
     basetype = INT;
 
+    // парсим enum
     if (token == Enum) {
         // enum [id] { a = 10, b = 20, ... }
         match(Enum);
         if (token != '{') {
-            match(Id); // skip the [id] part
+            match(Id); // пропустить [id] часть
         }
         if (token == '{') {
-            // parse the assign part
+            // парсим присвоенную часть
             match('{');
             enum_declaration();
             match('}');
@@ -1039,7 +1097,7 @@ void global_declaration() {
         return;
     }
 
-    // parse type information
+    // парсим тип информации
     if (token == Int) {
         match(Int);
     }
@@ -1048,22 +1106,22 @@ void global_declaration() {
         basetype = CHAR;
     }
 
-    // parse the comma seperated variable declaration.
+    // парсим объяление переменной разделенной запятыми
     while (token != ';' && token != '}') {
         type = basetype;
-        // parse pointer type, note that there may exist `int ****x;`
+        // парсим тип указателя ,обратите внимание что может существовать `int ****x;`
         while (token == Mul) {
             match(Mul);
             type = type + PTR;
         }
 
         if (token != Id) {
-            // invalid declaration
+            // неправильное объявление
             printf("%d: bad global declaration\n", line);
             exit(-1);
         }
         if (current_id[Class]) {
-            // identifier exists
+            // идентификатор найден
             printf("%d: duplicate global declaration\n", line);
             exit(-1);
         }
@@ -1072,11 +1130,12 @@ void global_declaration() {
 
         if (token == '(') {
             current_id[Class] = Fun;
-            current_id[Value] = (int)(text + 1); 
+            current_id[Value] = (int)(text + 1); // адрес функции в памяти
             function_declaration();
         } else {
-            current_id[Class] = Glo; 
-            current_id[Value] = (int)data; 
+            // объявление переменной
+            current_id[Class] = Glo; // глобальная переменная
+            current_id[Value] = (int)data; // назначить адрес в памяти
             data = data + sizeof(int);
         }
 
@@ -1088,7 +1147,7 @@ void global_declaration() {
 }
 
 void program() {
-    // get next token
+    // получить следующий токен
     next();
     while (token > 0) {
         global_declaration();
@@ -1099,7 +1158,7 @@ void program() {
 int eval() {
     int op, *tmp;
     while (1) {
-        op = *pc++; // get next operation code
+        op = *pc++; // получить код следующей операции
 
         if (op == IMM)       {ax = *pc++;}                                     
         else if (op == LC)   {ax = *(char *)ax;}                              
@@ -1162,9 +1221,10 @@ int main(int argc, char **argv)
     argc--;
     argv++;
 
-    poolsize = 256 * 1024; 
+    poolsize = 256 * 1024; // произвольный размер
     line = 1;
 
+    // выделение памяти для виртуальной машины
     if (!(text = old_text = malloc(poolsize))) {
         printf("could not malloc(%d) for text area\n", poolsize);
         return -1;
@@ -1192,12 +1252,13 @@ int main(int argc, char **argv)
     src = "char else enum if int return sizeof while "
           "open read close printf malloc memset memcmp exit void main";
 
-    i = Char;
+    i = Char; // добавить ключевые слова в таблицу символов
     while (i <= While) {
         next();
         current_id[Token] = i++;
     }
 
+    // добавить библиотеку в таблицу символов
     i = OPEN;
     while (i <= EXIT) {
         next();
@@ -1206,11 +1267,11 @@ int main(int argc, char **argv)
         current_id[Value] = i++;
     }
 
-    next(); current_id[Token] = Char; 
-    next(); idmain = current_id; 
+    next(); current_id[Token] = Char; // обрабатывать тип void
+    next(); idmain = current_id; // отслеживать main
 
 
-    // read the source file
+    // прочитать исходный файл
     if ((fd = open(*argv, 0)) < 0) {
         printf("could not open(%s)\n", *argv);
         return -1;
@@ -1220,12 +1281,12 @@ int main(int argc, char **argv)
         printf("could not malloc(%d) for source area\n", poolsize);
         return -1;
     }
-    // read the source file
+    // прочитать исходный файл
     if ((i = read(fd, src, poolsize-1)) <= 0) {
         printf("read() returned %d\n", i);
         return -1;
     }
-    src[i] = 0; // add EOF character
+    src[i] = 0; // добавление EOF символа
     close(fd);
 
     program();
@@ -1235,9 +1296,9 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    // setup stack
+    // запуск стека
     sp = (int *)((int)stack + poolsize);
-    *--sp = EXIT; // call exit if main returns
+    *--sp = EXIT; // если выведена main функция return exit(-1)
     *--sp = PUSH; tmp = sp;
     *--sp = argc;
     *--sp = (int)argv;
