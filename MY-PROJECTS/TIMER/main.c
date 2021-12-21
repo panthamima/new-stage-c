@@ -9,7 +9,7 @@
 
 // int center();
 
-// // int main (void) {
+// // int main () {
 
 // //     int center();%02d:%02d:%02d
 
