@@ -6,6 +6,8 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <ncurses.h>
+#include <stdarg.h>
+
 
 // int center();
 
@@ -41,19 +43,6 @@ int time_time()
     printf("%02d:%02d:%02d\n", aTm->tm_hour, aTm->tm_min, aTm->tm_sec);
 
 }
-
-// int main (int argc, char **argv) {
-//     struct winsize w;
-//     int width = w.ws_col;
-//     int height = w.ws_row;
-//     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-
-//     // printf("%d*%s*%d    "((space - length) >> 1) + length, x, 
-//     // ((space - length) >> 1) + ((space - length) & 1), ' '););
-//     printf ("lines %d\n", w.ws_row);
-//     printf ("columns %d\n", w.ws_col);
-//     return 0;  // make sure your main returns int
-// }
 
 
 int main () {
