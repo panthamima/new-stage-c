@@ -36,7 +36,7 @@
 
 
 // SIGWINCH is called when the window is resized.
-void handle_winch(int sig){
+void center(int sig){
   signal(SIGWINCH, SIG_IGN);
 
   // Reinitialize the window to update data structures.
@@ -63,18 +63,18 @@ void handle_winch(int sig){
   mvaddstr(y, x, temp);
   refresh();
 
-  signal(SIGWINCH, handle_winch);
+  signal(SIGWINCH, center);
 }
 
 int main(int argc, char *argv[]){
   initscr();
   // COLS/LINES are now set
 
-  signal(SIGWINCH, handle_winch);
+  signal(SIGWINCH, center);
 
-  while(getch() != 27){
-    /* Nada */
-  }
+  // while(getch() != 27){
+  //   /* Nada */
+  // }
 
   endwin();
 
