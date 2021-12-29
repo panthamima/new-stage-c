@@ -5,55 +5,82 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <signal.h>
 #include <ncurses.h>
 #include <stdarg.h>
 
 
-// int center();
+// int main (int argc, char **argv) {
+//     struct winsize w;
+//     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    
+//         int heigth = w.ws_row;
+//         int width = w.ws_col;
+//         int width05 = w.ws_col / 2;
+//         char x[] = " "; 
+//         int word_size = strlen(x);
 
-// // int main () {
-
-// //     int center();%02d:%02d:%02d
-
-// //     return 0;
-// // }
-
-// int main() {
-//     int space = 92;
-//     char x[] = "";
-
-//     int length = strlen(x);
-
-//     while (1) {   
+//     // while (heigth == 21 & width == 92) {
+//     while(1) {
 //         system("clear");
-        
 //         time_t t = time(NULL);
 //         struct tm* aTm = localtime(&t);
-//         printf ("%d",aTm->tm_hour, aTm->tm_min, aTm->tm_sec,((space - length) >> 1) + length, x, ((space - length) >> 1) + ((space - length) & 1), ' ');
-//         sleep(1);
+//         printf("%02d:%02d:%02d\n", aTm->tm_hour, aTm->tm_min, aTm->tm_sec);
 
+//         sleep(1);
 //     }
-//     return 0;
+//     // printf ("height %d\n", height);
+//     // printf ("width %d\n", width);
+//     return 0;  // make sure your main returns int
 // }
 
-int time_time()
-{
-    time_t t = time(NULL);
-    struct tm* aTm = localtime(&t);
-    printf("%02d:%02d:%02d\n", aTm->tm_hour, aTm->tm_min, aTm->tm_sec);
 
+// SIGWINCH is called when the window is resized.
+void center(int sig){
+	signal(SIGWINCH, SIG_IGN);
+
+  // Reinitialize the window to update data structures.
+	endwin();
+	initscr();
+	refresh();
+	clear();
+
+	time_t t = time(NULL);
+	struct tm* aTm = localtime(&t);
+	// sprintf("%02d:%02d:%02d\n", aTm->tm_hour, aTm->tm_min, aTm->tm_sec);
+	// int time_size = 9; 
+
+	char tmp[128];
+	// sprintf(tmp, "%d x %d", COLS, LINES);
+	char temp[128];
+	while(1) {
+		sprintf(temp, "%02d:%02d:%02d\n", aTm->tm_hour, aTm->tm_min, aTm->tm_sec);
+	}
+
+
+	int y = LINES / 2 - 1;
+	int x = COLS / 2 - strlen(tmp) / 2;
+	// Approximate the center
+
+	mvaddstr(y, x, temp);
+	refresh();
+
+	signal(SIGWINCH, center);
 }
 
+int main(int argc, char *argv[]){
+	initscr();
+	// COLS/LINES are now set
 
-int main () {
+	signal(SIGWINCH, center);
 
-    while (1)
-    {
-        system("clear");
-        time_time();
-        sleep(1);
-    }
-    return 0;
+	while(1){
+		system("clear");
+		void center();
+		sleep(1);
+	}
+
+	endwin();
+
+	return(0);
 }
-
-
