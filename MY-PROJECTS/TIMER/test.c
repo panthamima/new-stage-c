@@ -65,6 +65,7 @@ void center(int sig){
 	signal(SIGWINCH, center);
 }
 
+
 int main () {
 	initscr();
 	signal(SIGWINCH, center);
