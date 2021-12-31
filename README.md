@@ -1,7 +1,11 @@
 # new-stage-c
 <b> C PROJECTS</b> </br>
 
-deadline - min 20 projetcs before 2022 year
+deadline - min 20 projetcs before 2022 year - ❌❌❌
+
+
+# new-stage-c - CLOSED 
+
 
 complete 3/20 :<br>
 ----
